@@ -16,7 +16,7 @@ AAA--> o            o <--BBB
                     |
                    /
                   /
-In this diagram, the object BBB is in orbit around AAA. The path that BBB takes around AAA (drawn with lines) is only partly shown. In the map data, this orbital relationship is written AAA)BBB, which means "BBB is in orbit around AAA".
+In this diagram, the object BBB is in orbit around AAA. The path that BBB takes around AAA (drawn with lines) is only partly shown. In the map data, this orbital relationship is written AAA)BBB, which means \"BBB is in orbit around AAA\".
 
 Before you use your map data to plot a course, you need to make sure it wasn't corrupted during the download. To verify maps, the Universal Orbit Map facility uses orbit count checksums - the total number of direct orbits (like the one shown above) and indirect orbits.
 
@@ -125,3 +125,10 @@ What is the minimum number of orbital transfers required to move from the object
   (let [a' (parent-orbits orbits a)
         b' (parent-orbits orbits b)]
     (first (filter (fn [p] (some #(= p %) b')) a'))))
+
+(defn jumps-to-ancestor [orbits child ancestor]
+  (if (= child ancestor) 0
+      (inc (jumps-to-ancestor orbits (parent orbits child) ancestor))))
+
+(let [a (common-ancestor inputs "YOU" "SAN")]
+  (- (+ (jumps-to-ancestor inputs "YOU" a) (jumps-to-ancestor inputs "SAN" a)) 2))
