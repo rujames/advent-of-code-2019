@@ -52,31 +52,27 @@ After providing 1 to the only input instruction and passing all the tests, what 
 """
 
 (defn add [x x-mode y y-mode output]
-  (println "add" x x-mode y y-mode output)
   (let [x' (if (= x-mode 0) #(nth % x) (constantly x))
         y' (if (= y-mode 0) #(nth % y) (constantly y))]
-     (fn [program pointer out]
-       [(assoc program output (+ (x' program) (y' program))) (+ pointer 4) out])))
+     (fn [program pointer in out]
+       [(assoc program output (+ (x' program) (y' program))) (+ pointer 4) in out])))
      
 (defn multiply [x x-mode y y-mode output]
-  (println "times" x x-mode y y-mode output)
   (let [x' (if (= x-mode 0) #(nth % x) (constantly x))
         y' (if (= y-mode 0) #(nth % y) (constantly y))]
-     (fn [program pointer out]
-       [(assoc program output (* (x' program) (y' program))) (+ pointer 4) out])))
+     (fn [program pointer in out]
+       [(assoc program output (* (x' program) (y' program))) (+ pointer 4) in out])))
 
 (defn input [output]
-  (println "input" output)
-  (fn [program pointer out]
-    [(assoc program output 1) (+ pointer 2) out]))
+  (fn [program pointer in out]
+    [(assoc program output (first in)) (+ pointer 2) (rest in) out]))
 
 (defn output [address]
-  (println "output" address)
-  (fn [program pointer out]
-    [program (+ pointer 2) (cons (nth program address) out)]))
+  (fn [program pointer in out]
+    [program (+ pointer 2) in (cons (nth program address) out)]))
 
 (defn terminate []
-  (fn [program pointer out]
+  (fn [program pointer in out]
     (first out)))
 
 (defn modes [instruction]
@@ -107,21 +103,22 @@ After providing 1 to the only input instruction and passing all the tests, what 
        99 (terminate))
      program pointer out)))
 
-(defn run [p]
+(defn run [p inputs]
   (loop [program p
          pointer 0
+         in inputs
          out []]
-    (let [next-state (step program pointer out)]
+    (let [next-state (step program pointer in out)]
       (if (int? next-state)
         next-state
-        (recur (nth next-state 0) (nth next-state 1) (nth next-state 2))))))
+        (recur (nth next-state 0) (nth next-state 1) (nth next-state 2) (nth next-state 3))))))
 
 (def loaded-prog
   (->> (str/split (slurp "src/advent_of_code_2019/day5.input") #",")
        (map read-string)
        vec))
 
-(run loaded-prog)
+;; (run loaded-prog [1])
 
 """
 --- Part Two ---
@@ -162,48 +159,40 @@ What is the diagnostic code for system ID 5?
 """
 
 
-(defn input [output]
-  (println "input" output)
-  (fn [program pointer out]
-    [(assoc program output 5) (+ pointer 2) out]))
-
 (defn jump-if-true [p p-mode x x-mode]
-  (println "jump-if-true" p p-mode x x-mode)
   (let [p' (if (= p-mode 0) #(nth % p) (constantly p))
         x' (if (= x-mode 0) #(nth % x) (constantly x))]
-    (fn [program pointer out]
+    (fn [program pointer in out]
       (if (> (p' program) 0)
-        [program (x' program) out]
-        [program (+ pointer 3) out]))))
+        [program (x' program) in out]
+        [program (+ pointer 3) in out]))))
 
 (defn jump-if-false [p p-mode x x-mode]
   (println "jump-if-false" p p-mode x x-mode)
   (let [p' (if (= p-mode 0) #(nth % p) (constantly p))
         x' (if (= x-mode 0) #(nth % x) (constantly x))]
-    (fn [program pointer out]
+    (fn [program pointer in out]
       (if (= (p' program) 0)
-        [program (x' program) out]
-        [program (+ pointer 3) out]))))
+        [program (x' program) in out]
+        [program (+ pointer 3) in out]))))
 
 (defn less-than [x x-mode y y-mode output]
-  (println "less-than" x x-mode y y-mode output)
   (let [x' (if (= x-mode 0) #(nth % x) (constantly x))
         y' (if (= y-mode 0) #(nth % y) (constantly y))]
-    (fn [program pointer out]
+    (fn [program pointer in out]
       (if (< (x' program) (y' program))
-        [(assoc program output 1) (+ pointer 4) out]
-        [(assoc program output 0) (+ pointer 4) out]))))
+        [(assoc program output 1) (+ pointer 4) in out]
+        [(assoc program output 0) (+ pointer 4) in out]))))
 
 (defn equals [x x-mode y y-mode output]
-  (println "equals" x x-mode y y-mode output)
   (let [x' (if (= x-mode 0) #(nth % x) (constantly x))
         y' (if (= y-mode 0) #(nth % y) (constantly y))]
-    (fn [program pointer out]
+    (fn [program pointer in out]
       (if (= (x' program) (y' program))
-        [(assoc program output 1) (+ pointer 4) out]
-        [(assoc program output 0) (+ pointer 4) out]))))
+        [(assoc program output 1) (+ pointer 4) in out]
+        [(assoc program output 0) (+ pointer 4) in out]))))
 
-(defn step [program pointer out]
+(defn step [program pointer in out]
   (let [instruction (nth program pointer)
         opcode (mod instruction 100)
         modes' (modes instruction)]
@@ -245,4 +234,6 @@ What is the diagnostic code for system ID 5?
           (second modes')
           (nth program (+ pointer 3)))
        99 (terminate))
-     program pointer out)))
+     program pointer in out)))
+
+;; (run loaded-prog [5])
