@@ -187,13 +187,13 @@ Build a new emergency hull painting robot and run the Intcode program on it. How
        9 (adjust-base state (takep state modes 0))
        99 (assoc state :terminated? true))))
 
-(defn run [program]
+(defn run [program initial-colour]
   (loop [state {:memory program
                 :pointer 0
                 :out []
                 :relative-base 0
                 :current [0 0]
-                :colours {}
+                :colours {[0 0] initial-colour}
                 :direction 0
                 :terminated? false
                 :painted? false}]
@@ -213,4 +213,41 @@ Build a new emergency hull painting robot and run the Intcode program on it. How
      (map read-string)
      (compile-map)))
 
-;; (count (:colours (run program)))
+;; (count (:colours (run program 0)))
+;; => 1883
+
+"""
+--- Part Two ---
+You're not sure what it's trying to paint, but it's definitely not a registration identifier. The Space Police are getting impatient.
+
+Checking your external ship cameras again, you notice a white panel marked 'emergency hull painting robot starting panel'. The rest of the panels are still black, but it looks like the robot was expecting to start on a white panel, not a black one.
+
+Based on the Space Law Space Brochure that the Space Police attached to one of your windows, a valid registration identifier is always eight capital letters. After starting the robot on a single white panel instead, what registration identifier does it paint on your hull?
+"""
+
+(defn line [colours line-number from to]
+  (println line-number from to)
+  (->> (range from (inc to))
+       (map #(if (= (get colours [% line-number] 0) 1) "#" " "))
+       (str/join)))
+
+(defn display [colours]
+  (let [left (apply min (map first (keys colours)))
+        right (apply max (map first (keys colours)))
+        top (apply max (map second (keys colours)))
+        bottom (apply min (map second (keys colours)))]
+    (println (->> (range top (dec bottom) -1)
+         (map #(line colours % left right))
+         (str/join "\r\n")))))
+
+;; (display (:colours (run program 1)))
+;; 
+;;  ##  ###  #  #  ##  #  # ###  #### #  #   
+;; #  # #  # #  # #  # #  # #  # #    #  #   
+;; #  # #  # #  # #    #  # #  # ###  ####   
+;; #### ###  #  # # ## #  # ###  #    #  #   
+;; #  # #    #  # #  # #  # # #  #    #  #   
+;; #  # #     ##   ###  ##  #  # #    #  #
+;;
+;; => nil
+
