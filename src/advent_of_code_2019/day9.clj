@@ -112,12 +112,6 @@ Once your Intcode computer is fully functional, the BOOST program should report 
     :immediate parameter
     :relative (get (:memory state) (+ (:relative-base state) parameter) 0)))
 
-(defn params [state instruction]
-  (->> (modes instruction)
-       (map-indexed
-        (fn [index mode]
-          (param (get (:memory state) (+ (:pointer state) (inc index)) 0) mode state)))))
-
 (defn takep [state modes n]
   (let [arg (get (:memory state) (+ (:pointer state) (inc n)))]
     (condp = (nth modes n)

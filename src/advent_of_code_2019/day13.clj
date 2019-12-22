@@ -145,3 +145,61 @@ Start the game. How many block tiles are on the screen when the game exits?
      frequencies)
 => {0 504, 2 369, 1 87, 3 1, 4 1}
 """
+
+"""
+--- Part Two ---
+The game didn't run because you didn't put in any quarters. Unfortunately, you did not bring any quarters. Memory address 0 represents the number of quarters that have been inserted; set it to 2 to play for free.
+
+The arcade cabinet has a joystick that can move left and right. The software reads the position of the joystick with input instructions:
+
+If the joystick is in the neutral position, provide 0.
+If the joystick is tilted to the left, provide -1.
+If the joystick is tilted to the right, provide 1.
+The arcade cabinet also has a segment display capable of showing a single number that represents the player's current score. When three output instructions specify X=-1, Y=0, the third output instruction is not a tile; the value instead specifies the new score to show in the segment display. For example, a sequence of output values like -1,0,12345 would show 12345 as the player's current score.
+
+Beat the game by breaking all the blocks. What is your score after the last block is broken?
+"""
+
+(defn input [state to]
+  (assoc state
+         :memory (assoc (:memory state) to (:joystick state))
+         :pointer (+ (:pointer state) 2)))
+
+(defn consume-output [state]
+  (if (= (count (:out state)) 3)
+    (-> (condp = (nth (:out state) 2)
+          3 (assoc state :paddle (vec (take 2 (:out state))))
+          4 (assoc state :ball (vec (take 2 (:out state))))
+          state)
+        (assoc :screen (draw-tile (:screen state) (:out state))
+               :out []))
+    state))
+
+(defn adjust-joystick [state]
+  (assoc state
+         :joystick (Integer/signum (- (first (:ball state)) (first (:paddle state))))))
+
+(defn adjust [state]
+  (->> state
+       consume-output
+       adjust-joystick))
+
+(defn run [program]
+  (loop [state {:memory program
+                :pointer 0
+                :joystick 0
+                :ball [0 0]
+                :paddle [0 0]
+                :out []
+                :relative-base 0
+                :screen {}}]
+    (let [next-state (step state)]
+      (if (int? next-state)
+        (:screen state)
+        (recur (adjust next-state))))))
+
+(def free-play
+  (assoc program 0 2))
+
+;; (get (run free-play) [-1 0])
+;; => 19210
