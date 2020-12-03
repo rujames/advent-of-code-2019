@@ -88,6 +88,8 @@ Here are some larger examples:
 Given the list of reactions in your puzzle input, what is the minimum amount of ORE required to produce exactly 1 FUEL?
 "
 
+(declare request)
+
 (defn parse-reaction [line]
   (letfn [(parse-quantity [x] (#(hash-map :quantity (read-string (first %)) :symbol (second %)) (str/split x #" ")))]
     (let [[inputs output] (mapv str/trim (str/split line #"\=\>"))
@@ -106,7 +108,7 @@ Given the list of reactions in your puzzle input, what is the minimum amount of 
 
 (defn produce [reactions stockpile chemical]
   (if-let [reaction (reactions (:symbol chemical))]
-    (let [multiplier (int (Math/ceil (/ (:quantity chemical) (:quantity (:output reaction)))))
+    (let [multiplier (bigint (Math/ceil (/ (:quantity chemical) (:quantity (:output reaction)))))
           excess (- (* multiplier (:quantity (:output reaction))) (:quantity chemical))
           inputs (map #(update % :quantity * multiplier) (:inputs reaction))
           [stockpile cost]
@@ -135,3 +137,30 @@ Given the list of reactions in your puzzle input, what is the minimum amount of 
 ;; (second (request reactions {} {:symbol "FUEL" :quantity 1}))
 ;; => 783895
 
+"
+--- Part Two ---
+After collecting ORE for a while, you check your cargo hold: 1 trillion (1000000000000) units of ORE.
+
+With that much ore, given the examples above:
+
+The 13312 ORE-per-FUEL example could produce 82892753 FUEL.
+The 180697 ORE-per-FUEL example could produce 5586022 FUEL.
+The 2210736 ORE-per-FUEL example could produce 460664 FUEL.
+Given 1 trillion ORE, what is the maximum amount of FUEL you can produce?
+"
+
+(def naive-guess (quot 1000000000000 783895))
+
+(defn search [lower-bound upper-bound target]
+  (loop [low lower-bound
+         high upper-bound]
+    (let [mid (quot (+ low high) 2)
+          estimate (second (request reactions {} {:symbol "FUEL" :quantity mid}))]
+      (cond (= estimate target)  mid
+            (> estimate target) (recur low (dec mid))
+            (< estimate target)
+            (let [nextimate (second (request reactions {} {:symbol "FUEL" :quantity (inc mid)}))]
+              (if (> nextimate target) mid (recur mid high)))))))
+
+;; (search naive-guess 1000000000000 1000000000000)
+;; => 1896688
