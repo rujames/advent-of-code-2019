@@ -208,8 +208,8 @@ What is the fewest number of movement commands required to move the repair droid
           (->> [1 2 3 4]
                (keep #(attempt-move state %))
                (filter #(not (visited (:position %)))))]
-      (if (some :found successful-results)
-        (:depth state)
+      (if-let [success-state (some #(if (:found %) %) successful-results)]
+        (:depth success-state)
         (recur (apply conj (vec (rest queue)) successful-results) (conj visited (:position state)))))))
 
 (defn compile-map [program-sequence]
@@ -231,4 +231,79 @@ What is the fewest number of movement commands required to move the repair droid
 (attempt-move initial-state 1)
 
 ;; (bfs initial-state)
-;; => 215 (actual answer 216 - off by one)
+;; => 216
+
+"
+--- Part Two ---
+You quickly repair the oxygen system; oxygen gradually fills the area.
+
+Oxygen starts in the location containing the repaired oxygen system. It takes one minute for oxygen to spread to all open locations that are adjacent to a location that already contains oxygen. Diagonal locations are not adjacent.
+
+In the example above, suppose you've used the droid to explore the area fully and have the following map (where locations that currently contain oxygen are marked O):
+
+ ##   
+#..## 
+#.#..#
+#.O.# 
+ ###  
+Initially, the only location which contains oxygen is the location of the repaired oxygen system. However, after one minute, the oxygen spreads to all open (.) locations that are adjacent to a location containing oxygen:
+
+ ##   
+#..## 
+#.#..#
+#OOO# 
+ ###  
+After a total of two minutes, the map looks like this:
+
+ ##   
+#..## 
+#O#O.#
+#OOO# 
+ ###  
+After a total of three minutes:
+
+ ##   
+#O.## 
+#O#OO#
+#OOO# 
+ ###  
+And finally, the whole region is full of oxygen after a total of four minutes:
+
+ ##   
+#OO## 
+#O#OO#
+#OOO# 
+ ###  
+So, in this example, all locations contain oxygen after 4 minutes.
+
+Use the repair droid to get a complete map of the area. How many minutes will it take to fill with oxygen?
+"
+
+(defn find-oxygen-system [state]
+  (loop [queue [state]
+         visited #{}]
+    (let [state (first queue)
+          successful-results
+          (->> [1 2 3 4]
+               (keep #(attempt-move state %))
+               (filter #(not (visited (:position %)))))]
+      (if-let [success-state (some #(if (:found %) %) successful-results)]
+        success-state
+        (recur (apply conj (vec (rest queue)) successful-results) (conj visited (:position state)))))))
+
+(def second-state (assoc (find-oxygen-system initial-state) :depth 0))
+
+(defn flood-fill [state]
+  (loop [queue [state]
+         visited #{}]
+    (let [state (first queue)
+          successful-results
+          (->> [1 2 3 4]
+               (keep #(attempt-move state %))
+               (filter #(not (visited (:position %)))))]
+      (if (and (empty? successful-results) (empty? (rest queue)))
+        (:depth state)
+        (recur (apply conj (vec (rest queue)) successful-results) (conj visited (:position state)))))))
+
+;; (flood-fill second-state)
+;; => 326
