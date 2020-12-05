@@ -90,3 +90,43 @@ After 100 phases of FFT, what are the first eight digits in the final output lis
 ;; (take 8 (nth (iterate phase initial-signal) 100))
 ;; => (7 8 0 0 9 1 0 0)
 
+"
+--- Part Two ---
+Now that your FFT is working, you can decode the real signal.
+
+The real signal is your puzzle input repeated 10000 times. Treat this new signal as a single input list. Patterns are still calculated as before, and 100 phases of FFT are still applied.
+
+The first seven digits of your initial input signal also represent the message offset. The message offset is the location of the eight-digit message in the final output list. Specifically, the message offset indicates the number of digits to skip before reading the eight-digit message. For example, if the first seven digits of your initial input signal were 1234567, the eight-digit message would be the eight digits after skipping 1,234,567 digits of the final output list. Or, if the message offset were 7 and your final output list were 98765432109876543210, the eight-digit message would be 21098765. (Of course, your real message offset will be a seven-digit number, not a one-digit number like 7.)
+
+Here is the eight-digit message in the final output list after 100 phases. The message offset given in each input has been highlighted. (Note that the inputs given below are repeated 10000 times to find the actual starting input lists.)
+
+03036732577212944063491565474664 becomes 84462026.
+02935109699940807407585447034323 becomes 78725270.
+03081770884921959731165446850517 becomes 53553731.
+After repeating your input signal 10000 times and running 100 phases of FFT, what is the eight-digit message embedded in the final output list?
+"
+
+;; FFT is an upper triangular matrix with diagonal (1 ... 1)
+;; This means that the final element of FFT(x) (x^2_n) is just the final element of x (x^1_n)
+;; The second-from-last element of FFT(x) (x^2_(n-1)) is a function of (x^1_n) and (x^1_(n-1))
+;; Likewise, the kth-from-last element is a function of the final k elements
+
+;; Input is of "size" 6500000, and we only care about the message from 5975589 onwards, so in fact for this submatrix
+;; we just have FFTx_i = sum_k=i^n x_i
+;; A sophomore attempt might be to simply implement this
+;; If we reverse the input first, we can do this by taking the reductions of the sum of the input
+
+(def message-offset 5975589)
+(def input-size (* 650 10000))
+(def triangle-size (- input-size message-offset))
+
+(defn truncate-and-reverse [seed point]
+  (drop (+ (dec (count seed)) (rem point (count seed))) (cycle (reverse seed))))
+
+(def second-signal (truncate-and-reverse initial-signal input-size))
+
+(defn forward-sum [input]
+  (reductions #(rem (+ %1 %2) 10) input))
+
+;; (reverse (take-last 8 (take (inc triangle-size) (nth (iterate forward-sum second-signal) 100))))
+;; => (3 7 7 1 7 7 9 1)
