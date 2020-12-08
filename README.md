@@ -1,6 +1,6 @@
 # advent-of-code-2019
 
-Solutions for the 2019 Advent of Code (https://adventofcode.com)
+Solutions for the 2019 Advent of Code (https://adventofcode.com/2019)
 
 ## License
 
